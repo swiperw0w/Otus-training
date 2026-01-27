@@ -1,0 +1,18 @@
+type Deposited @entity(immutable: true) {
+  id: Bytes!
+  token: Bytes! # address
+  amount: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type FlashLoanExecuted @entity(immutable: true) {
+  id: Bytes!
+  asset: Bytes! # address
+  amount: BigInt! # uint256
+  premium: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}

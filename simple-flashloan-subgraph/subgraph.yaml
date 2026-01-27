@@ -1,0 +1,29 @@
+specVersion: 1.3.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: SimpleFlashloan
+    network: sepolia
+    source:
+      address: "0xd361d7de1f7aad7bd237a91cb6c1c98f1a57fa9a"
+      abi: SimpleFlashloan
+      startBlock: 10115853
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - Deposited
+        - FlashLoanExecuted
+      abis:
+        - name: SimpleFlashloan
+          file: ./abis/SimpleFlashloan.json
+      eventHandlers:
+        - event: Deposited(indexed address,uint256)
+          handler: handleDeposited
+        - event: FlashLoanExecuted(address,uint256,uint256)
+          handler: handleFlashLoanExecuted
+      file: ./src/simple-flashloan.ts
