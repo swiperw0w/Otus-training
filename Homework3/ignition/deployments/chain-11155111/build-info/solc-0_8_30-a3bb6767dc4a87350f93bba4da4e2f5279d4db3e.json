@@ -1,0 +1,39 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_30-a3bb6767dc4a87350f93bba4da4e2f5279d4db3e",
+  "solcVersion": "0.8.30",
+  "solcLongVersion": "0.8.30+commit.73712a01",
+  "userSourceNameMap": {
+    "contracts/Homework.sol": "project/contracts/Homework.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "prague",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/Homework.sol": {
+        "content": "// SPDX-License-Identifier: UNLICENSED\npragma solidity 0.8.30;\n\n// Gas Deploy до оптимизации 195803\n// Gas Deploy после оптимизации 178397\n\ncontract Homework {\n    uint256 public totalSum; // storage\n\n    event SumAdded(uint256 added, uint256 newTotal);\n\n    function addNumbers(uint[] calldata nums) external {\n        //Изначально делал лишнее копирование, для показания memory, но оно не нужно,\n        //т.к работаем с calldata напрямую.\n        // uint256[] memory copyNums = nums; // memory\n        uint256 tempSum = 0; // stack\n\n        //В цикле поменял copyNums на nums\n        for (uint256 i = 0; i < nums.length; i++)  {\n            // Поменял copyNums на nums\n            tempSum += nums[i]; // stack\n        }\n        totalSum += tempSum; // storage\n        emit SumAdded(tempSum, totalSum);\n    }\n\n    //По итогу лишняя функция, которая не нужна т.к есть totalSum.\n    // function readStorage() public view returns(uint256) {\n    //     return totalSum;\n    // }\n}"
+      }
+    }
+  }
+}
