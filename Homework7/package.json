@@ -1,0 +1,24 @@
+{
+  "name": "homework7",
+  "version": "1.0.0",
+  "type": "module",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ignition": "^3.0.7",
+    "@nomicfoundation/hardhat-toolbox-viem": "^5.0.2",
+    "@nomicfoundation/hardhat-verify": "^3.0.8",
+    "@types/node": "^22.19.7",
+    "ethers": "^5.8.0",
+    "forge-std": "github:foundry-rs/forge-std#v1.9.4",
+    "hardhat": "^3.1.5",
+    "typescript": "~5.8.0",
+    "viem": "^2.45.0"
+  },
+  "dependencies": {
+    "@certusone/wormhole-sdk": "^0.10.18",
+    "@injectivelabs/networks": "^1.14.6",
+    "@injectivelabs/sdk-ts": "^1.14.6",
+    "@injectivelabs/utils": "^1.14.6",
+    "@layerzerolabs/lz-evm-sdk-v2": "^3.0.158",
+    "dotenv": "^17.2.3"
+  }
+}
