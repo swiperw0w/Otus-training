@@ -53,7 +53,10 @@ contract TrustlessMarketplace is Ownable, ReentrancyGuard {
     uint256 public accumulatedFees;
 
     mapping(uint256 => Order) public orders;
-
+    
+    /// @notice Создаёт новый заказ
+    /// @param description Описание работы
+    /// @param amount Сумма сделки в wei
     function createOrder(string memory description, uint256 amount) external {
 
         if (amount == 0) { 
@@ -77,6 +80,8 @@ contract TrustlessMarketplace is Ownable, ReentrancyGuard {
         emit OrderCreated(orderCounter, msg.sender, amount);
     }
 
+    /// @notice Позволяет фрилансеру принять заказ
+    /// @param orderId Идентификатор заказа.  
     function acceptOrder(uint256 orderId) external {
 
         if (orderId == 0 || orderId > orderCounter) {
@@ -103,6 +108,8 @@ contract TrustlessMarketplace is Ownable, ReentrancyGuard {
         emit OrderAccepted(orderId, msg.sender);
     }
 
+    /// @notice Клиент вносит депозит в контракт
+    /// @dev Сумма должна строго соответствовать amount заказа
     function fundOrder(uint256 orderId) external payable nonReentrant {
 
         if (orderId == 0 || orderId > orderCounter) {
@@ -127,7 +134,9 @@ contract TrustlessMarketplace is Ownable, ReentrancyGuard {
 
         emit OrderFunded(orderId, msg.value);
     }
-
+    
+    /// @notice Подтверждение выполнения заказа
+    /// @dev Рассчитывает комиссию платформы и переводит средства исполнителю
     function confirmCompletion(uint256 orderId) external nonReentrant {
         
         if (orderId == 0 || orderId > orderCounter) {
@@ -158,6 +167,8 @@ contract TrustlessMarketplace is Ownable, ReentrancyGuard {
         emit OrderCompleted(orderId, order.freelancer, payout, fee);
     }
 
+    /// @notice Отмена заказа
+    /// @dev Логика зависит от текущего статуса заказа
     function cancelOrder(uint256 orderId) external nonReentrant {
 
         if (orderId == 0 || orderId > orderCounter) {
@@ -216,6 +227,7 @@ contract TrustlessMarketplace is Ownable, ReentrancyGuard {
         revert CannotCancel();
     }
 
+    /// @notice Вывод накопленной комиссии владельцем
     function withdrawFees() external onlyOwner nonReentrant {
 
         uint256 amount = accumulatedFees;

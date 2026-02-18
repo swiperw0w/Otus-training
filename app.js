@@ -3,8 +3,7 @@ import {
   createWalletClient,
   custom,
   parseEther,
-  formatEther,
-  http
+  formatEther
 } from "https://esm.sh/viem";
 
 import { sepolia } from "https://esm.sh/viem/chains";
@@ -12,37 +11,29 @@ import { abi } from "./abi.js";
 
 console.log("app loaded");
 
-// Адрес задеплоенного смарт-контракта
 const contractAddress = "0x772857301abC99E453918f2A6112C8D6d3615702";
 
-// Адрес задеплоенного смарт-контракта
-let account = null;
+let account;
 
-// PUBLIC CLIENT (RPC)
 const publicClient = createPublicClient({
   chain: sepolia,
-  transport: http("https://ethereum-sepolia-rpc.publicnode.com")
+  transport: custom(window.ethereum)
 });
 
-// WALLET CLIENT (MetaMask)
 const walletClient = createWalletClient({
   chain: sepolia,
   transport: custom(window.ethereum)
 });
 
-// ПОДКЛЮЧЕНИЕ КОШЕЛЬКА
 document.getElementById("connectBtn").onclick = async () => {
   const accounts = await walletClient.requestAddresses();
   account = accounts[0];
-
-  document.getElementById("account").innerText =
-    "Connected: " + account;
+  document.getElementById("account").innerText = "Connected: " + account;
 
   await loadPlatformInfo();
   await loadOrders();
 };
 
-// СОЗДАНИЕ ЗАКАЗА
 document.getElementById("createBtn").onclick = async () => {
   const description = document.getElementById("description").value;
   const amount = document.getElementById("amount").value;
@@ -59,7 +50,6 @@ document.getElementById("createBtn").onclick = async () => {
   await loadOrders();
 };
 
-// ВЫВОД КОМИССИИ
 document.getElementById("withdrawBtn").onclick = async () => {
   await walletClient.writeContract({
     address: contractAddress,
@@ -72,7 +62,6 @@ document.getElementById("withdrawBtn").onclick = async () => {
   await loadPlatformInfo();
 };
 
-// ЗАГРУЗКА ИНФОРМАЦИИ О ПЛАТФОРМЕ
 async function loadPlatformInfo() {
   const fee = await publicClient.readContract({
     address: contractAddress,
@@ -95,20 +84,11 @@ async function loadPlatformInfo() {
   document.getElementById("platformFee").innerText = fee.toString();
   document.getElementById("accFees").innerText = formatEther(acc);
 
-  // Показываем кнопку вывода комиссии только владельцу
-  if (
-    account &&
-    account.toLowerCase() === owner.toLowerCase()
-  ) {
-    document.getElementById("withdrawBtn").style.display =
-      "inline-block";
-  } else {
-    document.getElementById("withdrawBtn").style.display =
-      "none";
+  if (account && account.toLowerCase() === owner.toLowerCase()) {
+    document.getElementById("withdrawBtn").style.display = "inline-block";
   }
 }
 
-// ЗАГРУЗКА ВСЕХ ЗАКАЗОВ
 async function loadOrders() {
   const counter = await publicClient.readContract({
     address: contractAddress,
@@ -126,68 +106,43 @@ async function loadOrders() {
       functionName: "orders",
       args: [i]
     });
-  
-    // Данные заказа
-    const client = order[0];
-    const freelancer = order[1];
-    const description = order[2];
-    const amount = order[3];
-    const status = order[4];
 
-    // Проверяем роли текущего пользователя
-    const isClient =
-      account &&
-      account.toLowerCase() === client.toLowerCase();
-
-    const isFreelancer =
-      account &&
-      account.toLowerCase() === freelancer.toLowerCase();
-
-    // Определяем текст и цвет статуса
     let statusText = "";
     let statusClass = "";
 
-    switch (status) {
-      case 0:
-        statusText = "Open";
-        statusClass = "status-open";
-        break;
-      case 1:
-        statusText = "Accepted";
-        statusClass = "status-accepted";
-        break;
-      case 2:
-        statusText = "Funded";
-        statusClass = "status-funded";
-        break;
-      case 3:
-        statusText = "Completed";
-        statusClass = "status-completed";
-        break;
-      case 4:
-        statusText = "Cancelled";
-        statusClass = "status-cancelled";
-        break;
+    if (order.status === 0n) {
+      statusText = "Open";
+      statusClass = "status-open";
+    }
+    if (order.status === 1n) {
+      statusText = "Accepted";
+      statusClass = "status-accepted";
+    }
+    if (order.status === 2n) {
+      statusText = "Funded";
+      statusClass = "status-funded";
+    }
+    if (order.status === 3n) {
+      statusText = "Completed";
+      statusClass = "status-completed";
     }
 
-    // Создаём карточку заказа
     const card = document.createElement("div");
     card.className = "card";
 
     card.innerHTML = `
       <p><strong>Order #${i}</strong></p>
-      <p>Client: ${client}</p>
-      <p>Freelancer: ${freelancer}</p>
-      <p>Description: ${description}</p>
-      <p>Amount: ${formatEther(amount)} ETH</p>
+      <p>Client: ${order.client}</p>
+      <p>Freelancer: ${order.freelancer}</p>
+      <p>Description: ${order.description}</p>
+      <p>Amount: ${formatEther(order.amount)} ETH</p>
       <p>Status: <span class="${statusClass}">${statusText}</span></p>
     `;
 
-    // КНОПКА ACCEPT (Доступна если заказ открыт и пользователь не клиент)
-    if (status === 0 && account && !isClient) {
+    // ACCEPT
+    if (order.status === 0n && account !== order.client) {
       const btn = document.createElement("button");
       btn.innerText = "Accept";
-      btn.className = "btn-accept";
       btn.onclick = async () => {
         await walletClient.writeContract({
           address: contractAddress,
@@ -201,18 +156,17 @@ async function loadOrders() {
       card.appendChild(btn);
     }
 
-    // КНОПКА FUND (Клиент вносит депозит)
-    if (status === 1 && isClient) {
+    // FUND
+    if (order.status === 1n && account === order.client) {
       const btn = document.createElement("button");
       btn.innerText = "Fund";
-      btn.className = "btn-fund";
       btn.onclick = async () => {
         await walletClient.writeContract({
           address: contractAddress,
           abi,
           functionName: "fundOrder",
           args: [i],
-          value: amount,
+          value: order.amount,
           account
         });
         await loadOrders();
@@ -220,11 +174,10 @@ async function loadOrders() {
       card.appendChild(btn);
     }
 
-    // КНОПКА CONFIRM (Клиент подтверждает выполнение)
-    if (status === 2 && isClient) {
+    // CONFIRM COMPLETION
+    if (order.status === 2n && account === order.client) {
       const btn = document.createElement("button");
       btn.innerText = "Confirm Completion";
-      btn.className = "btn-confirm";
       btn.onclick = async () => {
         await walletClient.writeContract({
           address: contractAddress,
@@ -239,36 +192,6 @@ async function loadOrders() {
       card.appendChild(btn);
     }
 
-    // КНОПКА CANCEL (Логика отмены зависит от статуса и роли)
-    if (
-      account &&
-      (
-        (status === 0 && isClient) ||
-        (status === 1 && isFreelancer) ||
-        (status === 2 && isClient)
-      )
-    ) {
-      const btn = document.createElement("button");
-      btn.innerText = "Cancel";
-      btn.className = "btn-cancel";
-      btn.onclick = async () => {
-        await walletClient.writeContract({
-          address: contractAddress,
-          abi,
-          functionName: "cancelOrder",
-          args: [i],
-          account
-        });
-        await loadOrders();
-        await loadPlatformInfo();
-      };
-      card.appendChild(btn);
-    }
-
     container.appendChild(card);
   }
 }
-
-// Первичная загрузка данных при открытии страницы
-loadOrders();
-loadPlatformInfo();

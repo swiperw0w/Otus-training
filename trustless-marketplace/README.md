@@ -1,57 +1,132 @@
-# Sample Hardhat 3 Beta Project (`node:test` and `viem`)
+# Trustless Marketplace (Escrow dApp)
 
-This project showcases a Hardhat 3 Beta project using the native Node.js test runner (`node:test`) and the `viem` library for Ethereum interactions.
+Децентрализованный маркетплейс с escrow-механизмом, построенный на Ethereum.
 
-To learn more about the Hardhat 3 Beta, please visit the [Getting Started guide](https://hardhat.org/docs/getting-started#getting-started-with-hardhat-3). To share your feedback, join our [Hardhat 3 Beta](https://hardhat.org/hardhat3-beta-telegram-group) Telegram group or [open an issue](https://github.com/NomicFoundation/hardhat/issues/new) in our GitHub issue tracker.
+Смарт-контракт блокирует средства до выполнения условий сделки:
+Клиент создаёт заказ => Фрилансер принимает => Клиент вносит депозит => 
+После подтверждения выполнения средства автоматически переводятся исполнителю.
 
-## Project Overview
+Контракт задеплоен в тестовой сети Sepolia.
 
-This example project includes:
+Демо:
+https://trustless-marketplace-eight.vercel.app/
 
-- A simple Hardhat configuration file.
-- Foundry-compatible Solidity unit tests.
-- TypeScript integration tests using [`node:test`](nodejs.org/api/test.html), the new Node.js native test runner, and [`viem`](https://viem.sh/).
-- Examples demonstrating how to connect to different types of networks, including locally simulating OP mainnet.
+---
 
-## Usage
+##  Функциональность
 
-### Running Tests
+- Создание заказа (клиент)
+- Принятие заказа (фрилансер)
+- Финансирование заказа (депозит ETH)
+- Подтверждение выполнения (разблокировка средств)
+- Отмена заказа (в зависимости от статуса)
+- Комиссия платформы (1%)
+- Вывод накопленной комиссии владельцем
 
-To run all the tests in the project, execute the following command:
+---
 
-```shell
+## Архитектура проекта
+
+Frontend (Vanilla JS + Viem)  
+Viem Client (RPC-вызовы)  
+Smart Contract (Solidity)  
+Сеть Sepolia
+Vercel (Хостинг)
+
+Контракт содержит всю бизнес-логику и реализует escrow-модель через state machine.
+
+---
+
+## Смарт-контракт
+
+Контракт: `TrustlessMarketplace.sol`
+
+Основная логика:
+
+- Escrow-механизм
+- Машина состояний (enum Status):
+  - 0 — Open (Открыт)
+  - 1 — Accepted (Принят)
+  - 2 — Funded (Оплачен)
+  - 3 — Completed (Завершён)
+  - 4 — Cancelled (Отменён)
+- Защита от повторного входа (ReentrancyGuard)
+- Кастомные ошибки
+- Логика расчёта комиссии платформы
+
+---
+
+## Используемые технологии
+
+### Смарт-контракт
+- Solidity 0.8.28
+- OpenZeppelin (Ownable, ReentrancyGuard)
+- Hardhat 3.1.8 + Viem
+- Hardhat Ignition (деплой)
+- Sepolia Testnet
+
+### Фронтенд
+- Vanilla JavaScript
+- Viem
+- HTML + CSS
+- Хостинг: Vercel
+
+---
+
+## Установка (локально, если требуется)
+
+Клонировать репозиторий:
+git clone https://github.com/swiperw0w/trustless-marketplace.git
+cd trustless-marketplace
+
+Установить зависимости:
+npx install
+
+Компиляция:
+npx hardhat compile
+
+Запуск тестов:
 npx hardhat test
-```
 
-You can also selectively run the Solidity or `node:test` tests:
+Деплой:
+npx hardhat ignition deploy ignition/modules/TrustlessMarketplace.js --network sepolia
 
-```shell
-npx hardhat test solidity
-npx hardhat test nodejs
-```
+Деплой фронтенда:
+Фронтенд автоматически деплоится через Vercel при push в ветку main.
 
-### Make a deployment to Sepolia
+---
 
-This project includes an example Ignition module to deploy the contract. You can deploy this module to a locally simulated chain or to Sepolia.
+## Тестирование
 
-To run the deployment to a local chain:
+Юнит-тесты покрывают:
 
-```shell
-npx hardhat ignition deploy ignition/modules/Counter.ts
-```
+- createOrder
+- acceptOrder
+- fundOrder
+- confirmCompletion
+- withdrawFees
+- cancelOrder
 
-To run the deployment to Sepolia, you need an account with funds to send the transaction. The provided Hardhat configuration includes a Configuration Variable called `SEPOLIA_PRIVATE_KEY`, which you can use to set the private key of the account you want to use.
+Все тесты успешно проходят.
 
-You can set the `SEPOLIA_PRIVATE_KEY` variable using the `hardhat-keystore` plugin or by setting it as an environment variable.
+---
 
-To set the `SEPOLIA_PRIVATE_KEY` config variable using `hardhat-keystore`:
+## Безопасность
 
-```shell
-npx hardhat keystore set SEPOLIA_PRIVATE_KEY
-```
+- Защита от reentrancy-атак
+- Строгая проверка статусов
+- Только владелец может выводить комиссию
+- Проверка точной суммы депозита
+- Использование кастомных ошибок для экономии газа
 
-After setting the variable, you can run the deployment with the Sepolia network:
+---
 
-```shell
-npx hardhat ignition deploy --network sepolia ignition/modules/Counter.ts
-```
+## Возможные улучшения (V2)
+
+- Фронтенд на React + Wagmi
+- Поддержка WalletConnect
+- Фильтрация заказов
+- Улучшенный UI/UX
+- Поддержка ERC20-токенов
+- Система разрешения споров
+- Индексация через The Graph
